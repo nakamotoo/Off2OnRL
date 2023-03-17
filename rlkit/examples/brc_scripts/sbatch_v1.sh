@@ -13,7 +13,7 @@
 
 TASK_ID=$((SLURM_ARRAY_TASK_ID-1))
 
-BETAS="1;"
+BETAS="1;2"
 
 arrBETAS=(${BETAS//;/ })
 
@@ -47,5 +47,5 @@ singularity exec --nv --writable-tmpfs -B /usr/lib64 -B /var/lib/dcv-gl --overla
 export -f run_singularity
 parallel --delay 20 --linebuffer -j 1 run_singularity $BETA {} \
     ::: antmaze-medium-diverse-v2 \
-    ::: 0.1 0.8 5.0 \
-    ::: 2 4
+    ::: 0.8 0.1 5.0 \
+    ::: 4 2
