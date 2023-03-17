@@ -1,6 +1,6 @@
-export CUDA_VISIBLE_DEVICES=7
+export CUDA_VISIBLE_DEVICES=0
 export D4RL_SUPPRESS_IMPORT_ERROR=1
-# export WANDB_DISABLED=True
+export WANDB_DISABLED=True
 
 # conda activate /home/user/.conda/envs/rlkit-original && cd /work/Off2OnRL/rlkit
 
@@ -28,5 +28,7 @@ python examples/ours_cql.py \
 --ensemble_size=5 \
 --critic_num_hidden_layers=2 \
 --cql_with_lagrange=1 \
---cql_alpha_weight=5.0
+--cql_alpha_weight=5.0 \
+--target_action_gap=0.8 \
+
 done

@@ -420,6 +420,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--cql_with_lagrange", default=1, type=int)
     parser.add_argument("--cql_alpha_weight", default=5.0, type=float)
+    parser.add_argument("--target_action_gap", default=0.8, type=float)
 
 
     args = parser.parse_args()
@@ -462,7 +463,7 @@ if __name__ == "__main__":
             use_automatic_entropy_tuning=True,
             cql_alpha_weight=args.cql_alpha_weight,
             with_lagrange=bool(args.cql_with_lagrange),
-            target_action_gap=0.8
+            target_action_gap=args.target_action_gap
         ),
     )
     setup_logger(log_dir, variant=variant)

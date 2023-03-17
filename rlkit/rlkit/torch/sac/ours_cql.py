@@ -362,7 +362,7 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
  
 
         # new_next_actions = torch.stack(new_next_actions_list)
-        if self.max_q_backup:
+        if self.use_cql and self.max_q_backup:
             batch_size = actions.shape[0]
             action_dim = actions.shape[-1]
             new_next_actions, _ = policy_forward(self.policy, next_obs, repeat=10) # (batch_size, 10, action_dim)

@@ -190,6 +190,8 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
                 self.trainer.cql_alpha_weight = 0
                 self.trainer.use_cql=False
                 self.eval_interval = self.eval_interval_online
+                self.trainer.max_q_backup=False
+                self.trainer.backup_entropy=True
 
             if epoch == 0 or epoch % self.eval_interval == 0:
                 self.eval_data_collector.collect_new_paths(
