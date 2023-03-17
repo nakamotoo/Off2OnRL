@@ -241,7 +241,7 @@ def experiment(variant, args):
 
     M = variant["layer_size"]
     num_hidden_layers = 2
-    critic_num_hidden_layers = 4
+    critic_num_hidden_layers = args.critic_num_hidden_layers
     logging_cfg = ConfigDict()
     logging_cfg.project=variant["project"]
     wandb_logger = WandBLogger(config=logging_cfg, variant=variant)
@@ -416,7 +416,11 @@ if __name__ == "__main__":
     parser.add_argument("--project", default="antmaze-test", type=str)
     parser.add_argument("--eval_interval_offline", default=20, type=int)
     parser.add_argument("--eval_interval_online", default=10, type=int)
-    
+    parser.add_argument("--critic_num_hidden_layers", default=4, type=int)
+
+    parser.add_argument("--cql_with_lagrange", default=1, type=int)
+    parser.add_argument("--cql_alpha_weight", default=5.0, type=float)
+
 
     args = parser.parse_args()
 
@@ -435,6 +439,7 @@ if __name__ == "__main__":
         env_name=args.env_id,
         seed=args.seed,
         ensemble_size=args.ensemble_size,
+        critic_num_hidden_layers=args.critic_num_hidden_layers,
         algorithm_kwargs=dict(
             num_epochs=args.num_epochs,
             num_eval_steps_per_epoch=10000,
@@ -455,8 +460,8 @@ if __name__ == "__main__":
             reward_scale=10,
             reward_bias=-5,
             use_automatic_entropy_tuning=True,
-            cql_alpha_weight=5.0,
-            with_lagrange=True,
+            cql_alpha_weight=args.cql_alpha_weight,
+            with_lagrange=bool(args.cql_with_lagrange),
             target_action_gap=0.8
         ),
     )
