@@ -147,3 +147,4 @@ visualization/
 */pycache/*
 /rlkit/rlkit.egg-info/*
 /rlkit/data/ours
+/rlkit/rlkit/util/wandb_config.py

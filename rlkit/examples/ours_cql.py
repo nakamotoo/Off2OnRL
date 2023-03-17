@@ -411,6 +411,8 @@ if __name__ == "__main__":
     parser.add_argument("--weight_net_batch_size", default=256, type=int)
     parser.add_argument("--weight_net_lr", default=3e-4, type=float)
     parser.add_argument("--online_buffer_size", default=250000, type=int)
+    parser.add_argument("--project", default="antmaze-test", type=str)
+
 
     args = parser.parse_args()
 
@@ -425,14 +427,14 @@ if __name__ == "__main__":
         version="normal",
         layer_size=256,
         replay_buffer_size=int(2.5e6),
-        project="antmaze-test",
+        project=args.project,
         env_name=args.env_id,
         seed=args.seed,
         ensemble_size=args.ensemble_size,
         algorithm_kwargs=dict(
             num_epochs=args.num_epochs,
-            num_eval_steps_per_epoch=5000,
-            num_trains_per_train_loop=100,
+            num_eval_steps_per_epoch=10000,
+            num_trains_per_train_loop=1000,
             num_expl_steps_per_train_loop=1000,
             min_num_steps_before_training=args.min_steps_before_training,
             max_path_length=args.max_path_length,
