@@ -13,7 +13,7 @@
 
 TASK_ID=$((SLURM_ARRAY_TASK_ID-1))
 
-BETAS="1;2;3"
+BETAS="1;2;"
 
 arrBETAS=(${BETAS//;/ })
 
