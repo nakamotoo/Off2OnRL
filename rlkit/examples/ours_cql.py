@@ -397,8 +397,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_path_length", default=1000, type=int)
 
     # RL
-    parser.add_argument("--policy_lr", default=3e-4, type=float)
-    parser.add_argument("--lr", default=1e-4, type=float)
+    parser.add_argument("--policy_lr", default=1e-4, type=float)
+    parser.add_argument("--lr", default=3e-4, type=float)
     parser.add_argument("--ensemble_size", default=5, type=int)
 
     # Fine-tuning hyperparameters
