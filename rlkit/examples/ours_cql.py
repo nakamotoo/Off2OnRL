@@ -29,6 +29,8 @@ from rlkit.torch.torch_rl_algorithm import (
 )
 from rlkit.torch.distributions import TanhNormal
 from rlkit.torch.core import torch_ify, elem_or_tuple_to_numpy
+from rlkit.util.wandb_utils import WandBLogger, get_user_flags
+from ml_collections import ConfigDict
 
 
 ######################################################################
@@ -222,6 +224,7 @@ class ParallelTanhGaussianPolicy(nn.Module):
 
 def experiment(variant, args):
     # set seeds & make env
+    
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -239,6 +242,9 @@ def experiment(variant, args):
     M = variant["layer_size"]
     num_hidden_layers = 2
     critic_num_hidden_layers = 4
+    logging_cfg = ConfigDict()
+    logging_cfg.project=variant["project"]
+    wandb_logger = WandBLogger(config=logging_cfg, variant=variant)
 
     """ Prepare networks """
     weight_net = ConcatMlp(
@@ -373,6 +379,7 @@ def experiment(variant, args):
         first_epoch_multiplier=args.first_epoch_multiplier,
         weight_net_batch_size=args.weight_net_batch_size,
         init_online_fraction=args.init_online_fraction,
+        wandb_logger=wandb_logger,  
         **variant["algorithm_kwargs"]
     )
 
@@ -394,7 +401,7 @@ if __name__ == "__main__":
 
     # Fine-tuning hyperparameters
     parser.add_argument("--first_epoch_multiplier", default=1, type=int)
-    parser.add_argument("--num_epochs", default=251, type=int)
+    parser.add_argument("--num_epochs", default=2001, type=int)
 
     # Buffer flags
     parser.add_argument("--init_online_fraction", default=0.5, type=float)
@@ -418,15 +425,19 @@ if __name__ == "__main__":
         version="normal",
         layer_size=256,
         replay_buffer_size=int(2.5e6),
+        project="antmaze-test",
+        env_name=args.env_id,
+        seed=args.seed,
+        ensemble_size=args.ensemble_size,
         algorithm_kwargs=dict(
             num_epochs=args.num_epochs,
-            num_eval_steps_per_epoch=50000,
+            num_eval_steps_per_epoch=5000,
             num_trains_per_train_loop=100,
             num_expl_steps_per_train_loop=1000,
             min_num_steps_before_training=args.min_steps_before_training,
             max_path_length=args.max_path_length,
             batch_size=256,
-            start_epoch_online=10,
+            start_epoch_online=1000,
 
         ),
         trainer_kwargs=dict(

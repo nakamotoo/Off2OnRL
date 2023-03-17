@@ -124,14 +124,17 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
         min_num_steps_before_training=0,
         first_epoch_multiplier=1,
         start_epoch_online=0,
+        wandb_logger=None
     ):
         super().__init__(
             trainer,
             exploration_env,
             evaluation_env,
+            wandb_logger,
             exploration_data_collector,
             evaluation_data_collector,
             online_replay_buffer,
+            
         )
 
         self.offline_replay_buffer = offline_replay_buffer
@@ -186,6 +189,11 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
             if epoch == self.start_epoch_online:
                 self.is_online = True
                 self.trainer.is_online = True
+                self.trainer.with_lagrange = False
+                self.trainer.cql_alpha_weight = 0
+                self.trainer.use_cql=False
+
+            print("Epoch: ", epoch, "trainer.is_online: ", self.trainer.is_online, "with_lagrange: ", self.trainer.with_lagrange, "cql_alpha_weight: ", self.trainer.cql_alpha_weight, "use_cql: ", self.trainer.use_cql)
 
             for _ in range(self.num_train_loops_per_epoch):
                 if self.is_online:

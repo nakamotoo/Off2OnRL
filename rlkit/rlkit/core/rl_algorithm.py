@@ -27,6 +27,7 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
             trainer,
             exploration_env,
             evaluation_env,
+            wandb_logger,
             exploration_data_collector: DataCollector,
             evaluation_data_collector: DataCollector,
             replay_buffer: ReplayBuffer,
@@ -38,6 +39,7 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
         self.eval_data_collector = evaluation_data_collector
         self.replay_buffer = replay_buffer
         self._start_epoch = 0
+        self.wandb_logger = wandb_logger
 
         self.post_epoch_funcs = []
 
@@ -83,15 +85,20 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
         """
         Replay Buffer
         """
+        rb_diag = self.replay_buffer.get_diagnostics()
+
         logger.record_dict(
-            self.replay_buffer.get_diagnostics(),
+            rb_diag,
             prefix='replay_buffer/'
         )
+
+        self.wandb_logger.log(rb_diag, step=epoch)
 
         """
         Trainer
         """
         logger.record_dict(self.trainer.get_diagnostics(), prefix='trainer/')
+        self.wandb_logger.log(self.trainer.get_diagnostics(), step=epoch)
 
         """
         Exploration
@@ -100,6 +107,8 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
             self.expl_data_collector.get_diagnostics(),
             prefix='exploration/'
         )
+        self.wandb_logger.log(self.expl_data_collector.get_diagnostics(), step=epoch)
+        
         expl_paths = self.expl_data_collector.get_epoch_paths()
         if hasattr(self.expl_env, 'get_diagnostics'):
             logger.record_dict(
@@ -111,23 +120,28 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
                 eval_util.get_generic_path_information(expl_paths),
                 prefix="exploration/",
             )
+            self.wandb_logger.log(eval_util.get_generic_path_information(expl_paths, stat_prefix="exploration/"), step=epoch)
         """
         Evaluation
         """
+        eval_diags = self.eval_data_collector.get_diagnostics()
         logger.record_dict(
-            self.eval_data_collector.get_diagnostics(),
+            eval_diags,
             prefix='evaluation/',
         )
+        self.wandb_logger.log(eval_diags, step=epoch)
         eval_paths = self.eval_data_collector.get_epoch_paths()
         if hasattr(self.eval_env, 'get_diagnostics'):
             logger.record_dict(
                 self.eval_env.get_diagnostics(eval_paths),
                 prefix='evaluation/',
             )
+        
         logger.record_dict(
             eval_util.get_generic_path_information(eval_paths),
             prefix="evaluation/",
         )
+        self.wandb_logger.log(eval_util.get_generic_path_information(eval_paths, stat_prefix="evaluation/"), step=epoch)
 
         """
         Misc

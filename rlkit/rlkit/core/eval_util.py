@@ -36,7 +36,7 @@ def get_generic_path_information(paths, stat_prefix=''):
         'Actions', actions, stat_prefix=stat_prefix
     ))
     statistics['Num Paths'] = len(paths)
-    statistics[stat_prefix + 'Average Returns'] = get_average_returns(paths)
+    statistics[stat_prefix + 'average_return'] = get_average_returns(paths)
     statistics[stat_prefix + 'Num New Traj'] = len(paths)
 
     for info_key in ['env_infos', 'agent_infos']:

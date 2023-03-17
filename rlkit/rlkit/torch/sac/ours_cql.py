@@ -66,6 +66,7 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
         cql_alpha_weight=5.0,
         with_lagrange=False,
         target_action_gap=0.0,
+        use_cql=True
     ):
         super().__init__()
         self.env = env
@@ -84,6 +85,7 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
         self.w_activation = lambda x: torch.relu(x)
 
         self.temperature = temperature
+        self.use_cql = use_cql
 
         self.use_automatic_entropy_tuning = use_automatic_entropy_tuning
         if self.use_automatic_entropy_tuning:
@@ -382,8 +384,10 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
             self.qf_criterion(q2_pred, q_target.detach()).sum(0).mean()
         )  # 5, 256, 1
 
-
-        cql_min_qf1_loss, cql_min_qf2_loss, alpha_prime_loss = self.compute_minq_loss(obs, actions)
+        if self.use_cql:
+            cql_min_qf1_loss, cql_min_qf2_loss, alpha_prime_loss = self.compute_minq_loss(obs, actions)
+        else:
+            cql_min_qf1_loss, cql_min_qf2_loss, alpha_prime_loss = 0.0,0.0 ,0.0
         # min_qf1_loss, min_qf2_loss, alpha_prime_loss = 0,0,0
         qf1_loss = qf1_loss + cql_min_qf1_loss
         qf2_loss = qf2_loss + cql_min_qf2_loss
@@ -418,7 +422,7 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
             eval_statistics["Weight Loss"] = np.mean(ptu.get_numpy(weight_loss))
             eval_statistics["Min QF1 Loss"] = np.mean(ptu.get_numpy(cql_min_qf1_loss))
             eval_statistics["Min QF2 Loss"] = np.mean(ptu.get_numpy(cql_min_qf2_loss))
-            if self.with_lagrange:
+            if self.use_cql and self.with_lagrange:
                 eval_statistics["Alpha Prime Loss"] = np.mean(ptu.get_numpy(alpha_prime_loss))
 
             if self.is_online:
