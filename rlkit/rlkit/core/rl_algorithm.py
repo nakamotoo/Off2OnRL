@@ -136,12 +136,12 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
                 self.eval_env.get_diagnostics(eval_paths),
                 prefix='evaluation/',
             )
-        
-        logger.record_dict(
-            eval_util.get_generic_path_information(eval_paths),
-            prefix="evaluation/",
-        )
-        self.wandb_logger.log(eval_util.get_generic_path_information(eval_paths, stat_prefix="evaluation/"), step=epoch)
+        if len(eval_paths) > 0:
+            logger.record_dict(
+                eval_util.get_generic_path_information(eval_paths),
+                prefix="evaluation/",
+            )
+            self.wandb_logger.log(eval_util.get_generic_path_information(eval_paths, stat_prefix="evaluation/"), step=epoch)
 
         """
         Misc

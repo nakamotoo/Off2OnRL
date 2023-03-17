@@ -380,6 +380,8 @@ def experiment(variant, args):
         weight_net_batch_size=args.weight_net_batch_size,
         init_online_fraction=args.init_online_fraction,
         wandb_logger=wandb_logger,  
+        eval_interval_offline=args.eval_interval_offline,
+        eval_interval_online=args.eval_interval_online,
         **variant["algorithm_kwargs"]
     )
 
@@ -412,7 +414,9 @@ if __name__ == "__main__":
     parser.add_argument("--weight_net_lr", default=3e-4, type=float)
     parser.add_argument("--online_buffer_size", default=250000, type=int)
     parser.add_argument("--project", default="antmaze-test", type=str)
-
+    parser.add_argument("--eval_interval_offline", default=20, type=int)
+    parser.add_argument("--eval_interval_online", default=10, type=int)
+    
 
     args = parser.parse_args()
 

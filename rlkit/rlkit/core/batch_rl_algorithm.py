@@ -124,7 +124,9 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
         min_num_steps_before_training=0,
         first_epoch_multiplier=1,
         start_epoch_online=0,
-        wandb_logger=None
+        wandb_logger=None,
+        eval_interval_offline=1,
+        eval_interval_online=1,
     ):
         super().__init__(
             trainer,
@@ -162,6 +164,8 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
         self.min_num_steps_before_training = min_num_steps_before_training
         self.first_epoch_multiplier = first_epoch_multiplier
         self.is_online=False
+        self.eval_interval = eval_interval_offline
+        self.eval_interval_online = eval_interval_online
 
     def _train(self):
 
@@ -179,19 +183,22 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
             range(self._start_epoch, self.num_epochs),
             save_itrs=True,
         ):
-            self.eval_data_collector.collect_new_paths(
-                self.max_path_length,
-                self.num_eval_steps_per_epoch,
-                discard_incomplete_paths=True,
-            )
-            gt.stamp("evaluation sampling")
-
             if epoch == self.start_epoch_online:
                 self.is_online = True
                 self.trainer.is_online = True
                 self.trainer.with_lagrange = False
                 self.trainer.cql_alpha_weight = 0
                 self.trainer.use_cql=False
+                self.eval_interval = self.eval_interval_online
+
+            if epoch == 0 or epoch % self.eval_interval == 0:
+                self.eval_data_collector.collect_new_paths(
+                    self.max_path_length,
+                    self.num_eval_steps_per_epoch,
+                    discard_incomplete_paths=True,
+                )
+            gt.stamp("evaluation sampling")
+
 
             print("Epoch: ", epoch, "trainer.is_online: ", self.trainer.is_online, "with_lagrange: ", self.trainer.with_lagrange, "cql_alpha_weight: ", self.trainer.cql_alpha_weight, "use_cql: ", self.trainer.use_cql)
 
