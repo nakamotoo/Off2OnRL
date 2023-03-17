@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=7
 export D4RL_SUPPRESS_IMPORT_ERROR=1
 # export WANDB_DISABLED=True
 
@@ -24,9 +24,9 @@ do
 python examples/ours_cql.py \
 --env_id $env \
 --seed $seed \
---project off2on-antmaze-maxqbackup \
+--project off2on-antmaze-maxqbackup-lrfixed \
 --ensemble_size=5 \
---critic_num_hidden_layers=2 \
+--critic_num_hidden_layers=4 \
 --cql_with_lagrange=1 \
 --cql_alpha_weight=5.0 \
 --target_action_gap=0.8 \
