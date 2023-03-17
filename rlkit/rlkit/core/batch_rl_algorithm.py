@@ -11,6 +11,7 @@ from rlkit.core import logger, eval_util
 from rlkit.core.rl_algorithm import BaseRLAlgorithm, _get_epoch_timings
 from rlkit.data_management.replay_buffer import ReplayBuffer
 from rlkit.samplers.data_collector import PathCollector, MdpPathCollector
+from tqdm import tqdm
 
 
 class BatchRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
@@ -122,6 +123,7 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
         num_train_loops_per_epoch=1,
         min_num_steps_before_training=0,
         first_epoch_multiplier=1,
+        start_epoch_online=0,
     ):
         super().__init__(
             trainer,
@@ -135,6 +137,7 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
         self.offline_replay_buffer = offline_replay_buffer
         self.priority_replay_buffer = priority_replay_buffer
         self.init_online_fraction = init_online_fraction
+        self.start_epoch_online = start_epoch_online
 
         """ 
         Important: set transitions.max to be s.t. initial sampling ratio is roughly 0.1
@@ -155,18 +158,19 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
         self.num_expl_steps_per_train_loop = num_expl_steps_per_train_loop
         self.min_num_steps_before_training = min_num_steps_before_training
         self.first_epoch_multiplier = first_epoch_multiplier
+        self.is_online=False
 
     def _train(self):
 
-        if self.min_num_steps_before_training > 0:
-            init_expl_paths = self.expl_data_collector.collect_new_paths(
-                self.max_path_length,
-                self.min_num_steps_before_training,
-                discard_incomplete_paths=False,
-            )
-            self.replay_buffer.add_paths(init_expl_paths)
-            self.priority_replay_buffer.add_paths(init_expl_paths)
-            self.expl_data_collector.end_epoch(-1)
+        # if self.min_num_steps_before_training > 0:
+        #     init_expl_paths = self.expl_data_collector.collect_new_paths(
+        #         self.max_path_length,
+        #         self.min_num_steps_before_training,
+        #         discard_incomplete_paths=False,
+        #     )
+        #     self.replay_buffer.add_paths(init_expl_paths)
+        #     self.priority_replay_buffer.add_paths(init_expl_paths)
+        #     self.expl_data_collector.end_epoch(-1)
 
         for epoch in gt.timed_for(
             range(self._start_epoch, self.num_epochs),
@@ -179,17 +183,21 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
             )
             gt.stamp("evaluation sampling")
 
-            for _ in range(self.num_train_loops_per_epoch):
-                new_expl_paths = self.expl_data_collector.collect_new_paths(
-                    self.max_path_length,
-                    self.num_expl_steps_per_train_loop,
-                    discard_incomplete_paths=False,
-                )
-                gt.stamp("exploration sampling", unique=False)
+            if epoch == self.start_epoch_online:
+                self.is_online = True
+                self.trainer.is_online = True
 
-                self.replay_buffer.add_paths(new_expl_paths)
-                self.priority_replay_buffer.add_paths(new_expl_paths)
-                gt.stamp("data storing", unique=False)
+            for _ in range(self.num_train_loops_per_epoch):
+                if self.is_online:
+                    new_expl_paths = self.expl_data_collector.collect_new_paths(
+                        self.max_path_length,
+                        self.num_expl_steps_per_train_loop,
+                        discard_incomplete_paths=False,
+                    )
+                    gt.stamp("exploration sampling", unique=False)
+                    self.replay_buffer.add_paths(new_expl_paths)
+                    self.priority_replay_buffer.add_paths(new_expl_paths)
+                gt.stamp("data storing", unique=False)  
 
                 self.training_mode(True)
                 if epoch == 0:
@@ -198,46 +206,61 @@ class OurRLAlgorithm(BaseRLAlgorithm, metaclass=abc.ABCMeta):
                     )
                 else:
                     num_trains_per_train_loop = self.num_trains_per_train_loop
-                for _ in range(num_trains_per_train_loop):
-                    train_data_online = self.replay_buffer.random_batch(
-                        self.weight_net_batch_size
-                    )
-                    train_data_offline = self.offline_replay_buffer.random_batch(
-                        self.weight_net_batch_size
-                    )
-                    train_data_rl = self.priority_replay_buffer.random_batch(
-                        self.batch_size
-                    )
 
-                    train_data = dict()
-                    train_data["offline_observations"] = train_data_offline[
-                        "observations"
-                    ]
-                    train_data["offline_next_observations"] = train_data_offline[
-                        "next_observations"
-                    ]
-                    train_data["offline_actions"] = train_data_offline["actions"]
-                    train_data["offline_rewards"] = train_data_offline["rewards"]
-                    train_data["offline_terminals"] = train_data_offline["terminals"]
-                    train_data["online_observations"] = train_data_online[
-                        "observations"
-                    ]
-                    train_data["online_next_observations"] = train_data_online[
-                        "next_observations"
-                    ]
-                    train_data["online_actions"] = train_data_online["actions"]
-                    train_data["online_rewards"] = train_data_online["rewards"]
-                    train_data["online_terminals"] = train_data_online["terminals"]
 
-                    train_data["rl_observations"] = train_data_rl["observations"]
-                    train_data["rl_next_observations"] = train_data_rl[
-                        "next_observations"
-                    ]
-                    train_data["rl_actions"] = train_data_rl["actions"]
-                    train_data["rl_rewards"] = train_data_rl["rewards"]
-                    train_data["rl_terminals"] = train_data_rl["terminals"]
-                    train_data["idxs"] = train_data_rl["idxs"]
-                    train_data["tree_idxs"] = train_data_rl["tree_idxs"]
+                for _ in tqdm(range(num_trains_per_train_loop)):
+                    if self.is_online:
+                        train_data_online = self.replay_buffer.random_batch(
+                            self.weight_net_batch_size
+                        )
+                        train_data_offline = self.offline_replay_buffer.random_batch(
+                            self.weight_net_batch_size
+                        )
+                        train_data_rl = self.priority_replay_buffer.random_batch(
+                            self.batch_size
+                        )
+
+                        train_data = dict()
+                        train_data["offline_observations"] = train_data_offline[
+                            "observations"
+                        ]
+                        train_data["offline_next_observations"] = train_data_offline[
+                            "next_observations"
+                        ]
+                        train_data["offline_actions"] = train_data_offline["actions"]
+                        train_data["offline_rewards"] = train_data_offline["rewards"]
+                        train_data["offline_terminals"] = train_data_offline["terminals"]
+                        train_data["online_observations"] = train_data_online[
+                            "observations"
+                        ]
+                        train_data["online_next_observations"] = train_data_online[
+                            "next_observations"
+                        ]
+                        train_data["online_actions"] = train_data_online["actions"]
+                        train_data["online_rewards"] = train_data_online["rewards"]
+                        train_data["online_terminals"] = train_data_online["terminals"]
+
+                        train_data["rl_observations"] = train_data_rl["observations"]
+                        train_data["rl_next_observations"] = train_data_rl[
+                            "next_observations"
+                        ]
+                        train_data["rl_actions"] = train_data_rl["actions"]
+                        train_data["rl_rewards"] = train_data_rl["rewards"]
+                        train_data["rl_terminals"] = train_data_rl["terminals"]
+                        train_data["idxs"] = train_data_rl["idxs"]
+                        train_data["tree_idxs"] = train_data_rl["tree_idxs"]
+                    else:
+                        train_data_offline = self.offline_replay_buffer.random_batch(
+                            self.batch_size
+                        )
+                        train_data = dict()
+                        train_data["rl_observations"] = train_data_offline["observations"]
+                        train_data["rl_next_observations"] = train_data_offline[
+                            "next_observations"
+                        ]
+                        train_data["rl_actions"] = train_data_offline["actions"]
+                        train_data["rl_rewards"] = train_data_offline["rewards"]
+                        train_data["rl_terminals"] = train_data_offline["terminals"]
 
                     self.trainer.train(train_data)
 

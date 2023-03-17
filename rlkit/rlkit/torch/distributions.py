@@ -360,7 +360,7 @@ class TanhNormal(Distribution):
             ptu.from_numpy(np.log([2.]))
             - pre_tanh_value
             - torch.nn.functional.softplus(-2. * pre_tanh_value)
-        ).sum(dim=1)
+        ).sum(dim=-1)
         return log_prob + correction
 
     def log_prob(self, value, pre_tanh_value=None):

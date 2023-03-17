@@ -32,3 +32,13 @@ Fine-tune an offline halfcheetah agent
 (rlkit) $ cd rlkit
 (rlkit) $ python examples/ours.py --env_id halfcheetah-medium-v0 --policy_lr 3e-4 --first_epoch_multiplier 5 --init_online_fraction 0.75 --online_buffer_size 250000 --seed 0
 ```
+
+
+### Instalation memo
+```
+pip install torch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0
+pip install gtimer
+```
+
+### Memo
+algorithm impl: /home/nakamoto/Off2OnRL/rlkit/rlkit/torch/sac/ours.py

@@ -106,10 +106,11 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
                 self.expl_env.get_diagnostics(expl_paths),
                 prefix='exploration/',
             )
-        logger.record_dict(
-            eval_util.get_generic_path_information(expl_paths),
-            prefix="exploration/",
-        )
+        if len(expl_paths) > 0:
+            logger.record_dict(
+                eval_util.get_generic_path_information(expl_paths),
+                prefix="exploration/",
+            )
         """
         Evaluation
         """

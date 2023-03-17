@@ -255,7 +255,10 @@ def from_numpy(*args, **kwargs):
 
 
 def get_numpy(tensor):
-    return tensor.to('cpu').detach().numpy()
+    if isinstance(tensor, float):
+        return tensor
+    else:
+        return tensor.to('cpu').detach().numpy()
 
 
 def randint(*sizes, torch_device=None, **kwargs):

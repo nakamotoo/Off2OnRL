@@ -29,3 +29,4 @@ dependencies:
   - gitpython==2.1.7
   - gtimer==1.0.0b5
   - pygame==1.9.2
+  - parso==0.7.1
