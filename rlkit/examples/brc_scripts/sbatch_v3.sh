@@ -32,7 +32,7 @@ singularity exec --nv --writable-tmpfs -B /usr/lib64 -B /var/lib/dcv-gl --overla
     conda activate odt
     cd $PROJECT_DIR
 
-    python ours_cql.py \
+    python examples/ours_cql.py \
     --env_id $2 \
     --seed $1 \
     --project off2on-antmaze-maxqbackup-sweep \
