@@ -126,7 +126,7 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
         """
         eval_diags = self.eval_data_collector.get_diagnostics()
         logger.record_dict(
-            eval_diags,
+            self.eval_data_collector.get_diagnostics(),
             prefix='evaluation/',
         )
         self.wandb_logger.log(eval_diags, step=epoch)

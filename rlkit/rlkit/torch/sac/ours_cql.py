@@ -66,7 +66,9 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
         cql_alpha_weight=5.0,
         with_lagrange=False,
         target_action_gap=0.0,
-        use_cql=True
+        use_cql=True,
+        max_q_backup=True,
+        backup_entropy=False
     ):
         super().__init__()
         self.env = env
@@ -140,6 +142,8 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
         self.ensemble_size = ensemble_size
         self.cql_alpha_weight = cql_alpha_weight
         self.is_online = False
+        self.max_q_backup = max_q_backup
+        self.backup_entropy = backup_entropy
 
     def train_from_torch(self, batch):
         gt.blank_stamp()
@@ -355,24 +359,37 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
             actions.unsqueeze(0).repeat(self.ensemble_size, 1, 1),
         )  # (5, 32, 1)
 
-        next_dist = self.policy(next_obs)
-        new_next_actions, new_log_pi = next_dist.rsample_and_logprob()  # (32, 6), (32)
-        new_next_actions = new_next_actions.unsqueeze(0).repeat(
-            self.ensemble_size, 1, 1
-        )
-        new_log_pi = new_log_pi.unsqueeze(-1)
+ 
 
         # new_next_actions = torch.stack(new_next_actions_list)
-        for_target_q_values = torch.min(
-            self.target_qf1(
-                next_obs.unsqueeze(0).repeat(self.ensemble_size, 1, 1), new_next_actions
-            ),
-            self.target_qf2(
-                next_obs.unsqueeze(0).repeat(self.ensemble_size, 1, 1), new_next_actions
-            ),
-        )
+        if self.max_q_backup:
+            batch_size = actions.shape[0]
+            action_dim = actions.shape[-1]
+            new_next_actions, _ = policy_forward(self.policy, next_obs, repeat=10) # (batch_size, 10, action_dim)
+            new_next_actions = new_next_actions.view(batch_size * 10, action_dim)
+            target_qf1_values = self.qf1(obs.unsqueeze(0).repeat(self.ensemble_size, 10, 1), new_next_actions.unsqueeze(0).repeat(self.ensemble_size, 1, 1)).view(self.ensemble_size, batch_size, 10)
+            target_qf2_values = self.qf2(obs.unsqueeze(0).repeat(self.ensemble_size, 10, 1), new_next_actions.unsqueeze(0).repeat(self.ensemble_size, 1, 1)).view(self.ensemble_size, batch_size, 10)
+            target_qf1_values=torch.max(target_qf1_values, dim=-1, keepdim=True)[0]
+            target_qf2_values=torch.max(target_qf2_values, dim=-1, keepdim=True)[0]
+            target_q_values = torch.min(target_qf1_values, target_qf2_values)
+        else:
+            next_dist = self.policy(next_obs)
+            new_next_actions, new_log_pi = next_dist.rsample_and_logprob()  # (32, 6), (32)
+            new_next_actions = new_next_actions.unsqueeze(0).repeat(
+                self.ensemble_size, 1, 1
+            )
+            new_log_pi = new_log_pi.unsqueeze(-1)
+            target_q_values = torch.min(
+                self.target_qf1(
+                    next_obs.unsqueeze(0).repeat(self.ensemble_size, 1, 1), new_next_actions
+                ),
+                self.target_qf2(
+                    next_obs.unsqueeze(0).repeat(self.ensemble_size, 1, 1), new_next_actions
+                ),
+            )
+            if self.backup_entropy:
+                target_q_values = target_q_values - alpha * new_log_pi.unsqueeze(0)
 
-        target_q_values = for_target_q_values - alpha * new_log_pi.unsqueeze(0)
         q_target = (
             self.reward_scale * rewards + self.reward_bias
             + (1.0 - terminals) * self.discount * target_q_values
@@ -537,3 +554,22 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
             weight_net=self.weight_net,
         )
         return ret
+
+    def _get_tensor_values(self, obs, actions, network=None):
+        action_shape = actions.shape[0]
+        obs_shape = obs.shape[0]
+        num_repeat = int (action_shape / obs_shape)
+        obs_temp = obs.unsqueeze(1).repeat(1, num_repeat, 1).view(obs.shape[0] * num_repeat, obs.shape[1])
+        preds = network(obs_temp, actions)
+        preds = preds.view(obs.shape[0], num_repeat, 1)
+        return preds
+
+    def _get_policy_actions(self, obs, num_actions, network=None):
+        obs_temp = obs.unsqueeze(1).repeat(1, num_actions, 1).view(obs.shape[0] * num_actions, obs.shape[1])
+        new_obs_actions, _, _, new_obs_log_pi, *_ = network(
+            obs_temp, reparameterize=True, return_log_prob=True,
+        )
+        if not self.discrete:
+            return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
+        else:
+            return new_obs_actions
