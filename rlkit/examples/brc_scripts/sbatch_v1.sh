@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=md4-5
+#SBATCH --job-name=md-0.8
 #SBATCH --open-mode=append
 #SBATCH --output=logs/out/%x_%j.txt
 #SBATCH --error=logs/err/%x_%j.txt
@@ -23,7 +23,7 @@ module load gnu-parallel
 
 export PROJECT_DIR=/global/home/users/$USER/Off2OnRL/rlkit
 export LOG_DIR=/global/scratch/users/$USER/Off2OnRL
-export PROJECT_NAME="odt-antmaze"
+export PROJECT_NAME="odt-antmaze-maxq-fixed"
 
 run_singularity ()
 {
@@ -47,5 +47,5 @@ singularity exec --nv --writable-tmpfs -B /usr/lib64 -B /var/lib/dcv-gl --overla
 export -f run_singularity
 parallel --delay 20 --linebuffer -j 1 run_singularity $BETA {} \
     ::: antmaze-medium-diverse-v2 \
-    ::: 5 \
+    ::: 0.8 \
     ::: 4
