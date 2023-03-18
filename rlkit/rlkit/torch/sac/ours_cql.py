@@ -173,7 +173,7 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
         self.qf1_optimizer.step()
 
         self.qf2_optimizer.zero_grad()
-        losses.qf2_loss.backward(retain_graph=True)
+        losses.qf2_loss.backward()
         self.qf2_optimizer.step()
 
         if self.is_online:
@@ -369,9 +369,11 @@ class OursCQLTrainer(TorchTrainer, LossFunction):
             new_next_actions = new_next_actions.view(batch_size * 10, action_dim)
             target_qf1_values = self.qf1(obs.unsqueeze(0).repeat(self.ensemble_size, 10, 1), new_next_actions.unsqueeze(0).repeat(self.ensemble_size, 1, 1)).view(self.ensemble_size, batch_size, 10)
             target_qf2_values = self.qf2(obs.unsqueeze(0).repeat(self.ensemble_size, 10, 1), new_next_actions.unsqueeze(0).repeat(self.ensemble_size, 1, 1)).view(self.ensemble_size, batch_size, 10)
-            target_qf1_values=torch.max(target_qf1_values, dim=-1, keepdim=True)[0]
-            target_qf2_values=torch.max(target_qf2_values, dim=-1, keepdim=True)[0]
-            target_q_values = torch.min(target_qf1_values, target_qf2_values)
+
+            target_q_values, _ = torch.max(
+                torch.min(target_qf1_values, target_qf2_values), dim=-1, keepdim=True
+            ) 
+                    
         else:
             next_dist = self.policy(next_obs)
             new_next_actions, new_log_pi = next_dist.rsample_and_logprob()  # (32, 6), (32)

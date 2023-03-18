@@ -1,6 +1,6 @@
 export CUDA_VISIBLE_DEVICES=7
 export D4RL_SUPPRESS_IMPORT_ERROR=1
-# export WANDB_DISABLED=True
+export WANDB_DISABLED=True
 
 # conda activate /home/user/.conda/envs/rlkit-original && cd /work/Off2OnRL/rlkit
 
