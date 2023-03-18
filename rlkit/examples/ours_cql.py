@@ -403,7 +403,7 @@ if __name__ == "__main__":
 
     # Fine-tuning hyperparameters
     parser.add_argument("--first_epoch_multiplier", default=1, type=int)
-    parser.add_argument("--num_epochs", default=2001, type=int)
+    parser.add_argument("--num_epochs", default=1501, type=int)
 
     # Buffer flags
     parser.add_argument("--init_online_fraction", default=0.5, type=float)
@@ -449,7 +449,7 @@ if __name__ == "__main__":
             min_num_steps_before_training=args.min_steps_before_training,
             max_path_length=args.max_path_length,
             batch_size=256,
-            start_epoch_online=1000,
+            start_epoch_online=500,
 
         ),
         trainer_kwargs=dict(
