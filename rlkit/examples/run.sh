@@ -1,6 +1,6 @@
 export CUDA_VISIBLE_DEVICES=7
 export D4RL_SUPPRESS_IMPORT_ERROR=1
-export WANDB_DISABLED=True
+# export WANDB_DISABLED=True
 
 # conda activate /home/user/.conda/envs/rlkit-original && cd /work/Off2OnRL/rlkit
 
@@ -19,16 +19,15 @@ env=antmaze-medium-diverse-v2
 # 1 3
 # 2 4
 # for seed in 1 3
-for seed in 100
+for seed in 100 101
 do
 python examples/ours_cql.py \
 --env_id $env \
 --seed $seed \
---project off2on-antmaze-maxqbackup-lrfixed \
---ensemble_size=5 \
---critic_num_hidden_layers=4 \
+--project off2on-antmaze-maxqbackup-fixed \
+--ensemble_size=1 \
+--critic_num_hidden_layers=3 \
 --cql_with_lagrange=1 \
 --cql_alpha_weight=5.0 \
---target_action_gap=0.8 \
-
+--target_action_gap=0.8 
 done

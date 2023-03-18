@@ -323,6 +323,7 @@ def experiment(variant, args):
 
     ds = env.get_dataset()
     dataset_size = ds["observations"].shape[0]
+    ds['actions'] = np.clip(ds['actions'], -args.clip_action, args.clip_action)
 
     priority_replay_buffer = PriorityReplayBuffer(
         int(2 ** np.ceil(np.log2(dataset_size + args.online_buffer_size))), expl_env
@@ -421,6 +422,7 @@ if __name__ == "__main__":
     parser.add_argument("--cql_with_lagrange", default=1, type=int)
     parser.add_argument("--cql_alpha_weight", default=5.0, type=float)
     parser.add_argument("--target_action_gap", default=0.8, type=float)
+    parser.add_argument("--clip_action", default=0.999, type=float)
 
 
     args = parser.parse_args()
