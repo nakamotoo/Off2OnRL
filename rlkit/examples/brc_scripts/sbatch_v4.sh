@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=lp-0.1
+#SBATCH --job-name=lp-2
 #SBATCH --open-mode=append
 #SBATCH --output=logs/out/%x_%j.txt
 #SBATCH --error=logs/err/%x_%j.txt
@@ -46,5 +46,5 @@ singularity exec --nv --writable-tmpfs -B /usr/lib64 -B /var/lib/dcv-gl --overla
 export -f run_singularity
 parallel --delay 20 --linebuffer -j 1 run_singularity $BETA {} \
     ::: antmaze-large-play-v2 \
-    ::: 0.1 \
+    ::: 2 \
     ::: 4
